@@ -3,7 +3,7 @@ const association = require("./util/dbAssoc");
 
 const app = express();
 
-const userRouter = require("./routes/user");
+const userRouter = require("./routes/userRoutes");
 
 app.use(function (req, res, next) {
   res.header("Access-Control-Allow-Origin", "*");
@@ -29,12 +29,12 @@ app.get("/", (req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT;
+const PORT = 4000;
 
 association()
   .then(() => {
     app.listen(PORT);
-    console.log("Connected to Database!");
+    console.log("Connected to Database! in port 4000");
   })
   .catch((e) => {
     console.log(e);
