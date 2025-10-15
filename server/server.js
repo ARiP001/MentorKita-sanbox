@@ -1,12 +1,14 @@
 const express = require("express");
 const association = require("./util/dbAssoc");
+require("dotenv").config();
 
 const app = express();
 
 const userRouter = require("./routes/userRoutes");
 
 app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
+  const corsOrigin = process.env.CORS_ORIGIN || "*";
+  res.header("Access-Control-Allow-Origin", corsOrigin);
   res.header(
     "Access-Control-Allow-Methods",
     "GET, POST, OPTIONS, PUT, DELETE, PATCH"
@@ -29,12 +31,12 @@ app.get("/", (req, res, next) => {
   });
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 
 association()
   .then(() => {
     app.listen(PORT);
-    console.log("Connected to Database! in port 4000");
+    console.log(`Connected to Database! in port ${PORT}`);
   })
   .catch((e) => {
     console.log(e);

@@ -14,6 +14,7 @@ const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const key = process.env.TOKEN_SECRET_KEY;
+const refreshKey = process.env.REFRESH_TOKEN_SECRET_KEY || process.env.TOKEN_SECRET_KEY;
 const cloudinary = require("../util/cloudinary_config");
 const fs = require("fs");
 const { post } = require("../routes/userRoutes");
@@ -32,15 +33,24 @@ const postUser = async (req, res) => {
       role: "MENTEE",
     });
 
-    const token = jwt.sign({ userId: newMentee.id, role: "MENTEE" }, key, {
+    const accessToken = jwt.sign({ userId: newMentee.id, role: "MENTEE" }, key, {
       algorithm: "HS256",
-      expiresIn: "1h",
+      expiresIn: process.env.JWT_EXPIRES_IN || "15m",
     });
+
+    const refreshToken = jwt.sign({ userId: newMentee.id }, refreshKey, {
+      algorithm: "HS256",
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7d",
+    });
+
+    // Save refresh token to database
+    await newMentee.update({ refreshToken });
 
     res.status(201).json({
       status: "Success",
       message: "Mentee registration successful!",
-      token,
+      accessToken,
+      refreshToken,
     });
   } catch (error) {
     res.status(500).json({
@@ -77,16 +87,25 @@ const loginHandler = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { userId: currentUser.id, role: currentUser.role },
       key,
-      { algorithm: "HS256", expiresIn: "1h" }
+      { algorithm: "HS256", expiresIn: process.env.JWT_EXPIRES_IN }
     );
+
+    const refreshToken = jwt.sign({ userId: currentUser.id }, refreshKey, {
+      algorithm: "HS256",
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+    });
+
+    // Save refresh token to database
+    await currentUser.update({ refreshToken });
 
     res.status(200).json({
       status: "Success",
       message: "Login berhasil!",
-      token,
+      accessToken,
+      refreshToken,
     });
   } catch (error) {
     res.status(500).json({
@@ -163,13 +182,14 @@ const editUserAccount = async (req, res) => {
       });
     }
 
-    let imageUrl = currentUser.profilePicture;
+    let imageUrl = currentUser.profilePict;
     if (req.file) {
       const file = req.file;
       const uploadOption = {
-        folder: "Profile_Member/",
+        folder: process.env.CLOUDINARY_PROFILE_FOLDER || "Profile_Member/",
         public_id: `user_${currentUser.id}`,
         overwrite: true,
+        upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
       };
       const uploadFile = await cloudinary.uploader.upload(
         file.path,
@@ -449,6 +469,54 @@ const searchMentor = async (req, res) => {
   }
 };
 
+// Refresh Token
+const refreshTokenHandler = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        status: "Error",
+        message: "Refresh token is required",
+      });
+    }
+
+    // Verify refresh token
+    const decoded = jwt.verify(refreshToken, refreshKey);
+    const user = await Mentee.findOne({ 
+      where: { 
+        id: decoded.userId,
+        refreshToken: refreshToken 
+      } 
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        status: "Error",
+        message: "Invalid refresh token",
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      { userId: user.id, role: user.role },
+      key,
+      { algorithm: "HS256", expiresIn: process.env.JWT_EXPIRES_IN || "15m" }
+    );
+
+    res.status(200).json({
+      status: "Success",
+      message: "Token refreshed successfully!",
+      accessToken: newAccessToken,
+    });
+  } catch (error) {
+    res.status(401).json({
+      status: "Error",
+      message: "Invalid refresh token",
+    });
+  }
+};
+
 module.exports = {
   postUser,
   loginHandler,
@@ -457,6 +525,7 @@ module.exports = {
   beMentor,
   searchMentor,
   addExperience,
+  refreshTokenHandler,
 };
 
 /*

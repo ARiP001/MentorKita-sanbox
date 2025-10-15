@@ -7,7 +7,7 @@ const db_host = process.env.DB_HOST;
 
 //buat database dulu di mysql workbench
 //nama database tersebut ditaruh dibawah
-const db_name = "kelompok5";
+const db_name = process.env.DB_NAME || "kelompok5";
 
 const sequelize = new Sequelize(db_name, db_username, db_password, {
   host: db_host,

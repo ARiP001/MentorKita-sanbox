@@ -32,9 +32,15 @@ Experience.belongsTo(Mentor);
 Mentee.hasMany(Mentor, { foreignKey: 'menteeId' });
 Mentor.belongsTo(Mentee, { foreignKey: 'menteeId' });
 
-// Mentee and Mentor relationship (many-to-many through Saved)
-Mentee.hasMany(Saved);
-Saved.belongsTo(Mentee);
+// Saved: connect Mentee and Mentor (many-to-many via explicit join model)
+Mentee.belongsToMany(Mentor, { through: Saved, foreignKey: 'menteeId', otherKey: 'mentorId' });
+Mentor.belongsToMany(Mentee, { through: Saved, foreignKey: 'mentorId', otherKey: 'menteeId' });
+
+// Also expose direct references on Saved for clarity
+Saved.belongsTo(Mentee, { foreignKey: 'menteeId' });
+Saved.belongsTo(Mentor, { foreignKey: 'mentorId' });
+Mentee.hasMany(Saved, { foreignKey: 'menteeId' });
+Mentor.hasMany(Saved, { foreignKey: 'mentorId' });
 
 const association = async () => {
   try {
@@ -45,5 +51,3 @@ const association = async () => {
 };
 
 module.exports = association;
-
-// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJNRU5URUUiLCJpYXQiOjE3MTYzNzgyNzEsImV4cCI6MTcxNjM4MTg3MX0.vq7G_tkGgb3J02uVnSfVTF3ksgIY4Vw31cYdvom0rts

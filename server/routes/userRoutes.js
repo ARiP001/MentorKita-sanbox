@@ -8,7 +8,8 @@ const {
   editUserAccount,
   searchMentor,
   beMentor,
-  addExperience
+  addExperience,
+  refreshTokenHandler
 } = require("../controller/user");
 
 // Routes for Mentee
@@ -31,6 +32,9 @@ router.post ("/users/BecomeAMentor", beMentor);
 router.get ("/users/searchMentor", searchMentor);
 
 router.post ("/users/addExperience", addExperience);
+
+// Refresh token endpoint
+router.post("/users/refreshToken", refreshTokenHandler);
 
 // router.get ("/users/profileMentor", );
 

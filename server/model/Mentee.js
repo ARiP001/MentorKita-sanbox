@@ -11,6 +11,7 @@ const Mentee = sequelize.define("mentees", {
   email: {
     type: Sequelize.STRING,
     allowNull: false,
+    unique: true,
   },
   fullName: {
     type: Sequelize.STRING,
@@ -29,12 +30,16 @@ const Mentee = sequelize.define("mentees", {
     allowNull: true,
   },
   about: {
-    type: Sequelize.STRING,
+    type: Sequelize.TEXT,
     allowNull: true,
   },
   role: {
     type: Sequelize.ENUM("MENTEE", "MENTOR"),
     allowNull: false,
+  },
+  refreshToken: {
+    type: Sequelize.STRING,
+    allowNull: true,
   },
 }, {
   timestamps: true,

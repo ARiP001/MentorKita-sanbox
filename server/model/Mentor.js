@@ -7,6 +7,22 @@ const Mentor = sequelize.define("mentor", {
     primaryKey: true,
     autoIncrement: true,
   },
+  fullName: {
+    type: Sequelize.STRING,
+    allowNull: false,
+  },
+  phoneNumber: {
+    type: Sequelize.STRING,
+    allowNull: true,
+  },
+  email: {
+    type: Sequelize.STRING,
+    allowNull: false,
+  },
+  about: {
+    type: Sequelize.TEXT,
+    allowNull: true,
+  },
   job: {
     type: Sequelize.STRING,
   },
@@ -15,6 +31,7 @@ const Mentor = sequelize.define("mentor", {
   },
   rating: {
     type: Sequelize.DOUBLE,
+    allowNull: false,
   },
 });
 
