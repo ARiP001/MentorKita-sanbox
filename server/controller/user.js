@@ -191,12 +191,15 @@ const editUserAccount = async (req, res) => {
         overwrite: true,
         upload_preset: process.env.CLOUDINARY_UPLOAD_PRESET,
       };
+      
+      // Convert buffer to base64 for Cloudinary
+      const base64String = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      
       const uploadFile = await cloudinary.uploader.upload(
-        file.path,
+        base64String,
         uploadOption
       );
       imageUrl = uploadFile.secure_url;
-      fs.unlinkSync(file.path);
     }
 
     await Mentee.update(
