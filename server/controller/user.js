@@ -410,10 +410,12 @@ const addExperience = async (req, res) => {
   }
 };
 
-// const getMentor
+// Search Mentors
 const searchMentor = async (req, res) => {
   try {
     const { fullName } = req.body;
+
+    console.log("Searching for mentor with name:", fullName);
 
     // Ensure that fullName is provided
     if (!fullName) {
@@ -423,48 +425,51 @@ const searchMentor = async (req, res) => {
       });
     }
 
-    // Find all mentees whose name matches the search query and ensure they are mentors
-    const mentees = await Mentee.findAll({
+    // Search directly in Mentor table
+    const mentors = await Mentor.findAll({
       where: {
         fullName: {
           [Op.like]: `%${fullName}%`,
         },
-        role: "MENTOR", // Ensure we are only getting mentors
       },
       include: [
         {
-          model: Mentor,
-          required: true,
+          model: Mentee,
+          attributes: ['id', 'email', 'phoneNumber', 'about', 'profilePict'],
         },
       ],
     });
 
-    // Debugging: log the mentees found
-    console.log("Mentees found:", mentees);
+    console.log("Mentors found:", mentors.length);
+    console.log("Found mentors:", mentors.map(m => m.fullName));
 
-    if (mentees.length === 0) {
+    if (mentors.length === 0) {
       return res.status(404).json({
         status: "Error",
-        message: "No mentors found with the given mentee name.",
+        message: `No mentors found with the name "${fullName}".`,
       });
     }
 
-    const mentors = mentees.map((mentee) => ({
-      mentorId: mentee.mentors[0].id,
-      menteeId: mentee.id,
-      fullName: mentee.fullName, //
-      // email: mentee.email,
-      about: mentee.about, //
-      job: mentee.mentors[0].job, //
-      // lokasi: mentee.mentors[0].lokasi,
-      rating: mentee.mentors[0].rating, //
+    const mentorResults = mentors.map((mentor) => ({
+      mentorId: mentor.id,
+      menteeId: mentor.menteeId,
+      fullName: mentor.fullName,
+      email: mentor.email,
+      phoneNumber: mentor.phoneNumber,
+      about: mentor.about,
+      job: mentor.job,
+      lokasi: mentor.lokasi,
+      rating: mentor.rating,
+      profilePict: mentor.mentee?.profilePict,
     }));
 
     res.status(200).json({
       status: "Success",
-      mentors,
+      message: `Found ${mentorResults.length} mentor(s)`,
+      mentors: mentorResults,
     });
   } catch (error) {
+    console.error("Search mentor error:", error);
     res.status(500).json({
       status: "Error",
       message: error.message,
@@ -484,8 +489,13 @@ const refreshTokenHandler = async (req, res) => {
       });
     }
 
+    console.log("Refresh token received:", refreshToken);
+    console.log("Refresh key:", refreshKey);
+
     // Verify refresh token
     const decoded = jwt.verify(refreshToken, refreshKey);
+    console.log("Decoded token:", decoded);
+
     const user = await Mentee.findOne({ 
       where: { 
         id: decoded.userId,
@@ -493,10 +503,13 @@ const refreshTokenHandler = async (req, res) => {
       } 
     });
 
+    console.log("User found:", user ? "Yes" : "No");
+    console.log("User refresh token in DB:", user?.refreshToken);
+
     if (!user) {
       return res.status(401).json({
         status: "Error",
-        message: "Invalid refresh token",
+        message: "Invalid refresh token - user not found or token mismatch",
       });
     }
 
@@ -504,7 +517,7 @@ const refreshTokenHandler = async (req, res) => {
     const newAccessToken = jwt.sign(
       { userId: user.id, role: user.role },
       key,
-      { algorithm: "HS256", expiresIn: process.env.JWT_EXPIRES_IN || "15m" }
+      { algorithm: "HS256", expiresIn: process.env.JWT_EXPIRES_IN}
     );
 
     res.status(200).json({
@@ -513,9 +526,10 @@ const refreshTokenHandler = async (req, res) => {
       accessToken: newAccessToken,
     });
   } catch (error) {
+    console.log("Refresh token error:", error.message);
     res.status(401).json({
       status: "Error",
-      message: "Invalid refresh token",
+      message: `Invalid refresh token: ${error.message}`,
     });
   }
 };
