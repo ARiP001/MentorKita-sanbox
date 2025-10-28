@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from "react-router-dom";
-import { isAuthenticated, logout, getUserRole } from '../../utils/auth';
+import { isAuthenticated, logout, getUserRole, getUserId } from '../../utils/auth';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     const checkAuth = () => {
       setIsLoggedIn(isAuthenticated());
       setUserRole(getUserRole());
+      setUserId(getUserId());
     };
     
     checkAuth();
@@ -46,13 +48,21 @@ function Navbar() {
           <li className="hover:text-[#081C87] hover:border-b-4 hover:border-[#081C87] border-b hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[200px] lg:text-[20px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[150px] md:text-[20px] md:leading-[30px] md:pt-[15px] md:text-center">
             <Link to="/searchMentor"> Search Mentors </Link>
           </li>
-          <li className="hover:text-[#081C87] hover:border-b-4 hover:border-[#081C87] border-b hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[200px] lg:text-[20px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[150px] md:text-[20px] md:leading-[30px] md:pt-[15px] md:text-center">
-            <Link to="/becomeAMentor"> Be a Mentor </Link>
-          </li>
+          {userRole === 'MENTOR' ? (
+            <li className="hover:text-[#081C87] hover:border-b-4 hover:border-[#081C87] border-b hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[200px] lg:text-[20px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[150px] md:text-[20px] md:leading-[30px] md:pt-[15px] md:text-center">
+              <Link to="/courseMentor"> Mentor </Link>
+            </li>
+          ) : (
+            <li className="hover:text-[#081C87] hover:border-b-4 hover:border-[#081C87] border-b hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[200px] lg:text-[20px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[150px] md:text-[20px] md:leading-[30px] md:pt-[15px] md:text-center">
+              <Link to="/becomeAMentor"> Be a Mentor </Link>
+            </li>
+          )}
           {isLoggedIn ? (
             <>
               <li className="hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[150px] lg:text-[20px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[100px] md:text-[20px] md:leading-[30px] md:pt-[15px] md:text-center">
-                <img className="w-[50px] h-[50px] bg-gray-300 rounded-full" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="" />
+                <Link to={userId ? `/profileUser/edit/${userId}` : '/loginUser'}>
+                  <img className="w-[50px] h-[50px] bg-gray-300 rounded-full cursor-pointer" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="User" />
+                </Link>
               </li>
               <li className="hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[100px] lg:text-[16px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[80px] md:text-[16px] md:leading-[30px] md:pt-[15px] md:text-center">
                 <button onClick={handleLogout} className="hover:text-red-300">
@@ -76,9 +86,9 @@ function Navbar() {
         <nav className="w-[180px] h-[170px]">
           <ul className="flex flex-col">
             <li className="text-black text-base px-[40px] py-[30px] font-semibold mx-auto">
-              <a href="#">
-                <img className="mt-7 mx-auto w-[90px] bg-gray-300 rounded-full" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="User Avatar" />
-              </a>
+              <Link to={userId ? `/profileUser/edit/${userId}` : '/loginUser'}>
+                <img className="mt-7 mx-auto w-[90px] bg-gray-300 rounded-full cursor-pointer" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="User Avatar" />
+              </Link>
             </li>
             <li className="text-black text-base px-[25px] py-[10px] font-semibold">
               <Link to="/"> Dashboard </Link>
@@ -86,9 +96,15 @@ function Navbar() {
             <li className="text-black text-base px-[25px] py-[10px] font-semibold">
               <Link to="/searchMentor"> Search Mentors </Link>
             </li>
-            <li className="text-black text-base px-[25px] py-[10px] font-semibold">
-              <Link to="/becomeAMentor"> Be a Mentor </Link>
-            </li>
+            {userRole === 'MENTOR' ? (
+              <li className="text-black text-base px-[25px] py-[10px] font-semibold">
+                <Link to="/courseMentor"> Mentor </Link>
+              </li>
+            ) : (
+              <li className="text-black text-base px-[25px] py-[10px] font-semibold">
+                <Link to="/becomeAMentor"> Be a Mentor </Link>
+              </li>
+            )}
             {isLoggedIn ? (
               <li className="text-[#081C87] text-base px-[25px] py-[10px] font-semibold">
                 <button onClick={handleLogout} className="hover:text-red-500">

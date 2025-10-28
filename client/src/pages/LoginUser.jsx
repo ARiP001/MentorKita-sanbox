@@ -40,8 +40,32 @@ const LoginUser = () => {
         // Simpan token ke localStorage
         localStorage.setItem("accessToken", result.accessToken);
         localStorage.setItem("refreshToken", result.refreshToken);
-        localStorage.setItem("userRole", result.role || "MENTEE");
         localStorage.setItem("userId", result.userId);
+
+        // Ambil role terbaru dari backend
+        try {
+          const profileRes = await fetch("http://localhost:4000/users/profileUser", {
+            headers: {
+              Authorization: `Bearer ${result.accessToken}`,
+            },
+          });
+          if (profileRes.ok) {
+            const profile = await profileRes.json();
+            // Simpan role dari backend (MENTOR/MENTEE)
+            if (profile && (profile.role || profile.data?.role)) {
+              localStorage.setItem("userRole", profile.role || profile.data.role);
+            } else {
+              // fallback jika backend tidak kirim role
+              localStorage.setItem("userRole", result.role || "MENTEE");
+            }
+          } else {
+            // fallback jika profile gagal
+            localStorage.setItem("userRole", result.role || "MENTEE");
+          }
+        } catch (e) {
+          // fallback jika error network
+          localStorage.setItem("userRole", result.role || "MENTEE");
+        }
         
         // Redirect ke dashboard
         navigate("/");

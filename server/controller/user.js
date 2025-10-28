@@ -106,6 +106,8 @@ const loginHandler = async (req, res) => {
       message: "Login berhasil!",
       accessToken,
       refreshToken,
+      role: currentUser.role,
+      userId: currentUser.id,
     });
   } catch (error) {
     res.status(500).json({
@@ -144,6 +146,7 @@ const getUserProfile = async (req, res) => {
     res.status(200).json({
       status: "Success",
       message: "Berhasil mengambil data pengguna",
+      role: loggedUser.role,
       mentee: {
         id: loggedUser.id,
         fullname: loggedUser.fullName,

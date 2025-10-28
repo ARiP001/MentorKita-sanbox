@@ -20,7 +20,10 @@ export const becomeAMentor = async (data, callback) => {
         },
       }
     );
-    
+
+    // Set role to MENTOR so Navbar updates
+    localStorage.setItem("userRole", "MENTOR");
+
     callback(true, response);
   } catch (error) {
     callback(false, error);
