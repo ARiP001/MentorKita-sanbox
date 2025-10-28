@@ -1,11 +1,9 @@
 
-// MASIH GAK BISA REGISTER (GAKBISA CONNECT KE BE)
-
 import axios from "axios";
 
 export const register = async (data, callback) => {
   await axios
-    .post("http://localhost:8000/users/registerUser", data, {
+    .post("http://localhost:4000/users/registerUser", data, {
       withCredentials: true,
     })
     .then(async (res) => {

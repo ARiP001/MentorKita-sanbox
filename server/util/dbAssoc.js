@@ -24,6 +24,10 @@ Skills.belongsToMany(Mentor, { through: SkillsRelationship });
 Mentee.hasMany(Comment);
 Comment.belongsTo(Mentee);
 
+// Mentor and Comment relationship (komentar dari mentee ke mentor)
+Mentor.hasMany(Comment);
+Comment.belongsTo(Mentor);
+
 // Mentor and Experience relationship
 Mentor.hasMany(Experience);
 Experience.belongsTo(Mentor);

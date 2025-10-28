@@ -235,6 +235,8 @@ const editUserAccount = async (req, res) => {
 
 const beMentor = async (req, res) => {
   try {
+    console.log("beMentor request body:", req.body);
+    
     const authorization = req.headers.authorization;
     let token;
     if (authorization && authorization.startsWith("Bearer ")) {
@@ -264,6 +266,8 @@ const beMentor = async (req, res) => {
       lokasi,
       rating,
       experiences,
+      courses,
+      skills,
     } = req.body;
 
     if (
@@ -278,7 +282,7 @@ const beMentor = async (req, res) => {
     ) {
       return res.status(400).json({
         status: "Error",
-        message: "All fields must be provided",
+        message: "All required fields must be provided",
       });
     }
 
@@ -310,13 +314,56 @@ const beMentor = async (req, res) => {
     });
 
     // Create experience entries
+    console.log("Creating experiences:", experiences);
     const experiencesData = experiences.map((exp) => ({
       year: exp.year,
-      desc: exp.desc,
+      title: exp.title,
+      detail: exp.detail,
       mentorId: newMentor.id,
     }));
 
     await Experience.bulkCreate(experiencesData);
+    console.log("Experiences created successfully");
+
+    // Handle courses if provided
+    console.log("Processing courses:", courses);
+    if (courses && courses.length > 0) {
+      for (const courseName of courses) {
+        // Find or create course
+        let course = await Course.findOne({ where: { nama_course: courseName } });
+        if (!course) {
+          course = await Course.create({ nama_course: courseName });
+          console.log("Created new course:", courseName);
+        }
+        
+        // Create course relationship
+        await CourseRelationship.create({
+          mentorId: newMentor.id,
+          courseId: course.id,
+        });
+        console.log("Created course relationship for:", courseName);
+      }
+    }
+
+    // Handle skills if provided
+    console.log("Processing skills:", skills);
+    if (skills && skills.length > 0) {
+      for (const skillName of skills) {
+        // Find or create skill
+        let skill = await Skills.findOne({ where: { nama_skills: skillName } });
+        if (!skill) {
+          skill = await Skills.create({ nama_skills: skillName });
+          console.log("Created new skill:", skillName);
+        }
+        
+        // Create skill relationship
+        await SkillsRelationship.create({
+          mentorId: newMentor.id,
+          skillId: skill.id,
+        });
+        console.log("Created skill relationship for:", skillName);
+      }
+    }
 
     // Update the mentee's role to MENTOR
     await currentUser.update({ role: "MENTOR" });
@@ -326,6 +373,8 @@ const beMentor = async (req, res) => {
       message: "Berhasil menjadi mentor!",
       mentor: newMentor,
       experiences: experiencesData,
+      courses: courses || [],
+      skills: skills || [],
     });
   } catch (error) {
     console.error(error);
@@ -534,6 +583,95 @@ const refreshTokenHandler = async (req, res) => {
   }
 };
 
+// Get all mentors with their courses
+const getAllMentors = async (req, res) => {
+  try {
+    const mentors = await Mentor.findAll({
+      include: [
+        {
+          model: Course,
+          through: CourseRelationship,
+        },
+        {
+          model: Mentee,
+          attributes: ['id', 'profilePict'],
+        }
+      ]
+    });
+
+    res.status(200).json({
+      status: "Success",
+      message: "Mentors retrieved successfully",
+      data: mentors,
+      count: mentors.length
+    });
+  } catch (error) {
+    console.error("Error getting mentors:", error);
+    res.status(500).json({
+      status: "Error",
+      message: "Failed to retrieve mentors",
+      error: error.message
+    });
+  }
+};
+
+// Get mentor detail with all related data
+const getMentorDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const mentor = await Mentor.findByPk(id, {
+      include: [
+        {
+          model: Course,
+          through: CourseRelationship,
+        },
+        {
+          model: Skills,
+          through: SkillsRelationship,
+        },
+        {
+          model: Experience,
+        },
+        {
+          model: Mentee,
+          attributes: ['id', 'profilePict'],
+        },
+        {
+          model: Comment,
+          include: [
+            {
+              model: Mentee,
+              attributes: ['id', 'fullName', 'profilePict'],
+            }
+          ],
+          order: [['createdAt', 'DESC']]
+        }
+      ]
+    });
+
+    if (!mentor) {
+      return res.status(404).json({
+        status: "Error",
+        message: "Mentor not found",
+      });
+    }
+
+    res.status(200).json({
+      status: "Success",
+      message: "Mentor detail retrieved successfully",
+      data: mentor
+    });
+  } catch (error) {
+    console.error("Error getting mentor detail:", error);
+    res.status(500).json({
+      status: "Error",
+      message: "Failed to retrieve mentor detail",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   postUser,
   loginHandler,
@@ -543,6 +681,8 @@ module.exports = {
   searchMentor,
   addExperience,
   refreshTokenHandler,
+  getAllMentors,
+  getMentorDetail,
 };
 
 /*

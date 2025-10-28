@@ -11,8 +11,12 @@ const Experience = sequelize.define("experience", {
     type: Sequelize.INTEGER,
     allowNull: false,
   },
-  desc: {
+  title: {
     type: Sequelize.STRING,
+    allowNull: false,
+  },
+  detail: {
+    type: Sequelize.TEXT,
     allowNull: false,
   }
 });

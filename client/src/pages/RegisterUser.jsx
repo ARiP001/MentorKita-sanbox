@@ -16,14 +16,28 @@ const RegisterUser = () => {
 
   const handleRegister = async (event) => {
     event.preventDefault();
+    const password = event.target.password.value;
+    const confirmPassword = event.target.confirmPassword.value;
+    
+    // Validasi password
+    if (password !== confirmPassword) {
+      generateError("Password dan konfirmasi password tidak sama");
+      return;
+    }
+    
+    if (password.length < 6) {
+      generateError("Password minimal 6 karakter");
+      return;
+    }
+
     const data = {
       fullName: event.target.fullname.value,
       email: event.target.email.value,
-      password: event.target.password.value,
+      password: password,
     };
 
     try {
-      const response = await fetch("http://localhost:8080/users/registerUser", {
+      const response = await fetch("http://localhost:4000/users/registerUser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,18 +47,29 @@ const RegisterUser = () => {
 
       const result = await response.json();
       if (response.ok) {
+        // Simpan token ke localStorage
+        localStorage.setItem("accessToken", result.accessToken);
+        localStorage.setItem("refreshToken", result.refreshToken);
+        localStorage.setItem("userRole", "MENTEE");
+        localStorage.setItem("userId", result.userId);
+        
+        // Redirect ke dashboard
         navigate("/");
+        toast.success("Registrasi berhasil!", {
+          position: "bottom-right",
+        });
       } else {
         if (result.errors) {
           Object.values(result.errors).forEach((error) => {
             generateError(error);
           });
         } else {
-          generateError(result.message);
+          generateError(result.message || "Registrasi gagal");
         }
       }
     } catch (error) {
-      generateError("An error occurred while registering.");
+      console.error("Register error:", error);
+      generateError("Terjadi kesalahan saat registrasi. Pastikan server berjalan.");
     }
   };
 

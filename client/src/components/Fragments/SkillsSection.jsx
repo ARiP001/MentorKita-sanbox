@@ -18,7 +18,7 @@ const SkillsSection = ({ skills ,customClass}) => {
 
 SkillsSection.propTypes = {
   skills: PropTypes.array,
-  customClass: PropTypes.array,
+  customClass: PropTypes.string,
 };
 
 export default SkillsSection;

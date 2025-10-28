@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 
-const InputForm = ({ type, label, placeholder, name, requiredStatus }) => {
+const InputForm = ({ type, label, placeholder, name, requiredStatus, value, onChange }) => {
   const [isFocused, setIsFocused] = useState(false);
   const statusRequired = requiredStatus ? "required" : "";
 
@@ -19,6 +19,8 @@ const InputForm = ({ type, label, placeholder, name, requiredStatus }) => {
         type={type}
         name={name}
         id={name}
+        value={value || ""}
+        onChange={onChange}
         className="mt-1 p-4 block w-full text-sm rounded-md border-[2px] border-[#C9C9C9] focus:border-blue-400 focus:ring-1 focus:ring-blue-400 focus:outline-none"
         placeholder={placeholder}
         required={statusRequired}
@@ -35,6 +37,8 @@ InputForm.propTypes = {
   placeholder: PropTypes.string,
   name: PropTypes.string,
   requiredStatus: PropTypes.bool,
+  value: PropTypes.string,
+  onChange: PropTypes.func,
 };
 
 export default InputForm;

@@ -47,15 +47,19 @@ const ContactCard = ({ phone, email, location, courses, onClose }) => {
         <h1 className="text-2xl font-semibold mb-4">Choose Your Course</h1>
         <form onSubmit={handleSubmit} className="mb-12">
           <div className="py-2">
-            {courses.map((course) => (
-              <CheckBoxForm
-                key={course.value}
-                object={course}
-                handleObjectChange={handleCourseChange}
-                selectedObject={selectedCourses}
-                customClass="w-[260px] border border-white text-black bg-white mb-3 py-[2px] px-4 truncate overflow-hidden rounded-xl text-base"
-              />
-            ))}
+            {courses && courses.length > 0 ? (
+              courses.map((course) => (
+                <CheckBoxForm
+                  key={course.value}
+                  object={course}
+                  handleObjectChange={handleCourseChange}
+                  selectedObject={selectedCourses}
+                  customClass="w-[260px] border border-white text-black bg-white mb-3 py-[2px] px-4 truncate overflow-hidden rounded-xl text-base"
+                />
+              ))
+            ) : (
+              <p className="text-white text-center py-4">No courses available</p>
+            )}
           </div>
           <div className="flex gap-1">
             <button type="button" onClick={onClose}>

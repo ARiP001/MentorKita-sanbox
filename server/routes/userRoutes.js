@@ -9,7 +9,9 @@ const {
   searchMentor,
   beMentor,
   addExperience,
-  refreshTokenHandler
+  refreshTokenHandler,
+  getAllMentors,
+  getMentorDetail
 } = require("../controller/user");
 
 // Routes for Mentee
@@ -30,6 +32,10 @@ router.put(
 router.post ("/users/BecomeAMentor", beMentor);
 
 router.get ("/users/searchMentor", searchMentor);
+
+router.get ("/users/getAllMentors", getAllMentors);
+
+router.get ("/users/mentorDetail/:id", getMentorDetail);
 
 router.post ("/users/addExperience", addExperience);
 

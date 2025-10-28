@@ -27,7 +27,7 @@ const LoginUser = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:8080/users/loginUser", {
+      const response = await fetch("http://localhost:4000/users/loginUser", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,18 +37,29 @@ const LoginUser = () => {
 
       const result = await response.json();
       if (response.ok) {
-        window.location.href = "/";
+        // Simpan token ke localStorage
+        localStorage.setItem("accessToken", result.accessToken);
+        localStorage.setItem("refreshToken", result.refreshToken);
+        localStorage.setItem("userRole", result.role || "MENTEE");
+        localStorage.setItem("userId", result.userId);
+        
+        // Redirect ke dashboard
+        navigate("/");
+        toast.success("Login berhasil!", {
+          position: "bottom-right",
+        });
       } else {
         if (result.errors) {
           Object.values(result.errors).forEach((error) => {
             generateError(error);
           });
         } else {
-          generateError(result.message);
+          generateError(result.message || "Login gagal");
         }
       }
     } catch (error) {
-      generateError("An error occurred while logging in.");
+      console.error("Login error:", error);
+      generateError("Terjadi kesalahan saat login. Pastikan server berjalan.");
     }
   };
 

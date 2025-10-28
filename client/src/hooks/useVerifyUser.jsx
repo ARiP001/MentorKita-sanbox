@@ -13,7 +13,7 @@ const useVerifyUser = () => {
       if (cookies.jwt) {
         try {
           const { data } = await axios.post(
-            `http://localhost:8000/`,
+            `http://localhost:4000/`,
             {},
             { withCredentials: true }
           );

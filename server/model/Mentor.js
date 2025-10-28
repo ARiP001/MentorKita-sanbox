@@ -33,6 +33,10 @@ const Mentor = sequelize.define("mentor", {
     type: Sequelize.DOUBLE,
     allowNull: false,
   },
+  profilePict: {
+    type: Sequelize.STRING,
+    allowNull: true,
+  },
 });
 
 module.exports = Mentor;
