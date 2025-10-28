@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Fragments/Navbar";
 import Footer from "../components/Fragments/Footer";
@@ -6,6 +6,23 @@ import GradientDashButton from "../components/Elements/Button/gradientDashButton
 
 
 const Dashboard = () =>{
+    const [topMentors, setTopMentors] = useState([]);
+
+    useEffect(() => {
+        const fetchTop = async () => {
+            try {
+                const res = await fetch("http://localhost:4000/users/getTopMentors?limit=5");
+                const data = await res.json();
+                if (res.ok && Array.isArray(data.data)) {
+                    setTopMentors(data.data);
+                }
+            } catch (_) {
+                // ignore
+            }
+        };
+        fetchTop();
+    }, []);
+
     return(
     <>
         <Navbar />
@@ -31,53 +48,19 @@ const Dashboard = () =>{
             <p className="font-bold text-[20px] text-center mt-[10px] pt-[20px] lg:text-[40px] lg:leading-[60px] lg:pt-[40px]">Top Rated Mentors</p>
             <section className="overflow-x-auto">
                 <div className="w-[800px] py-[20px] px-[20px] flex flex-row lg:w-[1550px]">
-                    
-                    <div className="w-[143px] h-[143px] rounded-2xl bg-white mx-[10px] shadow-xl lg:w-[281px] lg:h-[277px]">
-                        <figure className="flex flex-row pt-4 pl-2 mb-2">
-                            <a href="#"> <img className="w-[69px] h-[69px] bg-gray-300 rounded-full md:w-[139px] md:h-[139px]" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="" /></a>
-                            <p className="text-[13px] font-semibold text-[#081C87] pt-3 pl-1 md:text-[40px] md:mt-8"><span className="text-[32px] md:text-[40px]">5</span>/5</p>
-                            <img loading="lazy" src="../svg/rating-star.svg" alt="Star icon" className="pt-4 md:w-[39px] md:h-[39px] md:mt-12 shrink-0 aspect-square fill-yellow-400 w-4"/>
-                        </figure>
-                        <p className="text-[13px] font-semibold pl-3 md:text-[16px]">Alex Freshman</p>
-                        <p className="text-[10px] pl-3 font-normal md:text-[16px]">Head of Phaselleus Vitae</p>
-                    </div>
-                    <div className="w-[143px] h-[143px] rounded-2xl bg-white mx-[10px] shadow-xl lg:w-[281px] lg:h-[277px]">
-                        <figure className="flex flex-row pt-4 pl-2 mb-2">
-                            <a href="#"> <img className="w-[69px] h-[69px] bg-gray-300 rounded-full md:w-[139px] md:h-[139px]" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="" /></a>
-                            <p className="text-[13px] font-semibold text-[#081C87] pt-3 pl-1 md:text-[40px] md:mt-8"><span className="text-[32px] md:text-[40px]">5</span>/5</p>
-                            <img loading="lazy" src="../svg/rating-star.svg" alt="Star icon" className="pt-4 md:w-[39px] md:h-[39px] md:mt-12 shrink-0 aspect-square fill-yellow-400 w-4"/>
-                        </figure>
-                        <p className="text-[13px] font-semibold pl-3 md:text-[16px]">Alex Freshman</p>
-                        <p className="text-[10px] pl-3 font-normal md:text-[16px]">Head of Phaselleus Vitae</p>
-                    </div>
-                    <div className="w-[143px] h-[143px] rounded-2xl bg-white mx-[10px] shadow-xl lg:w-[281px] lg:h-[277px]">
-                        <figure className="flex flex-row pt-4 pl-2 mb-2">
-                            <a href="#"> <img className="w-[69px] h-[69px] bg-gray-300 rounded-full md:w-[139px] md:h-[139px]" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="" /></a>
-                            <p className="text-[13px] font-semibold text-[#081C87] pt-3 pl-1 md:text-[40px] md:mt-8"><span className="text-[32px] md:text-[40px]">5</span>/5</p>
-                            <img loading="lazy" src="../svg/rating-star.svg" alt="Star icon" className="pt-4 md:w-[39px] md:h-[39px] md:mt-12 shrink-0 aspect-square fill-yellow-400 w-4"/>
-                        </figure>
-                        <p className="text-[13px] font-semibold pl-3 md:text-[16px]">Alex Freshman</p>
-                        <p className="text-[10px] pl-3 font-normal md:text-[16px]">Head of Phaselleus Vitae</p>
-                    </div>
-                    <div className="w-[143px] h-[143px] rounded-2xl bg-white mx-[10px] shadow-xl lg:w-[281px] lg:h-[277px]">
-                        <figure className="flex flex-row pt-4 pl-2 mb-2">
-                            <a href="#"> <img className="w-[69px] h-[69px] bg-gray-300 rounded-full md:w-[139px] md:h-[139px]" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="" /></a>
-                            <p className="text-[13px] font-semibold text-[#081C87] pt-3 pl-1 md:text-[40px] md:mt-8"><span className="text-[32px] md:text-[40px]">5</span>/5</p>
-                            <img loading="lazy" src="../svg/rating-star.svg" alt="Star icon" className="pt-4 md:w-[39px] md:h-[39px] md:mt-12 shrink-0 aspect-square fill-yellow-400 w-4"/>
-                        </figure>
-                        <p className="text-[13px] font-semibold pl-3 md:text-[16px]">Alex Freshman</p>
-                        <p className="text-[10px] pl-3 font-normal md:text-[16px]">Head of Phaselleus Vitae</p>
-                    </div>
-                    <div className="w-[143px] h-[143px] rounded-2xl bg-white mx-[10px] shadow-xl lg:w-[281px] lg:h-[277px]">
-                        <figure className="flex flex-row pt-4 pl-2 mb-2">
-                            <a href="#"> <img className="w-[69px] h-[69px] bg-gray-300 rounded-full md:w-[139px] md:h-[139px]" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="" /></a>
-                            <p className="text-[13px] font-semibold text-[#081C87] pt-3 pl-1 md:text-[40px] md:mt-8"><span className="text-[32px] md:text-[40px]">5</span>/5</p>
-                            <img loading="lazy" src="../svg/rating-star.svg" alt="Star icon" className="pt-4 md:w-[39px] md:h-[39px] md:mt-12 shrink-0 aspect-square fill-yellow-400 w-4"/>
-                        </figure>
-                        <p className="text-[13px] font-semibold pl-3 md:text-[16px]">Alex Freshman</p>
-                        <p className="text-[10px] pl-3 font-normal md:text-[16px]">Head of Phaselleus Vitae</p>
-                    </div>
-                   
+                    {topMentors.map((m) => (
+                        <div key={m.id} className="w-[143px] h-[143px] rounded-2xl bg-white mx-[10px] shadow-xl lg:w-[281px] lg:h-[277px]">
+                            <figure className="flex flex-row pt-4 pl-2 mb-2">
+                                <a href={`/mentorDetail/${m.id}`}> 
+                                    <img className="w-[69px] h-[69px] bg-gray-300 rounded-full md:w-[139px] md:h-[139px] object-cover" src={m.profilePict || "https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png"} alt={m.fullName} />
+                                </a>
+                                <p className="text-[13px] font-semibold text-[#081C87] pt-3 pl-1 md:text-[40px] md:mt-8"><span className="text-[32px] md:text-[40px]">{m.rating ?? 0}</span>/5</p>
+                                <img loading="lazy" src="../svg/rating-star.svg" alt="Star icon" className="pt-4 md:w-[39px] md:h-[39px] md:mt-12 shrink-0 aspect-square fill-yellow-400 w-4"/>
+                            </figure>
+                            <p className="text-[13px] font-semibold pl-3 md:text-[16px]">{m.fullName}</p>
+                            <p className="text-[10px] pl-3 font-normal md:text-[16px]">{m.job}</p>
+                        </div>
+                    ))}
                 </div>
             </section>
             <section>

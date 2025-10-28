@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Navbar from "../components/Fragments/Navbar";
 import Footer from "../components/Fragments/Footer";
@@ -8,6 +8,7 @@ import LogoutBtn from "../components/Elements/Button/logoutBtn";
 import MyMentorCard from "../components/Fragments/MyMentorCard";
 import RatingBadge from "../components/Fragments/RatingBadge";
 import EditBtn from "../components/Elements/Button/editBtn";
+import { getUserId, getAuthToken } from "../utils/auth";
 
 const stats = [
   { value: 2, label: "Course" },
@@ -32,6 +33,25 @@ function Stat({ value, label }) {
 const ProfileUser = () => {
   let { id } = useParams();
   const mentor = mentors.find((mentor) => mentor.id === parseInt(id));
+  const loggedInId = getUserId();
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        const res = await fetch("http://localhost:4000/users/profileUser", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok && data?.mentee) setProfile(data.mentee);
+      } catch (_) {
+        // ignore errors for now
+      }
+    };
+    fetchProfile();
+  }, []);
 
   return (
     <div>
@@ -43,14 +63,14 @@ const ProfileUser = () => {
             <div className="md:w-2/3 flex flex-col md:flex-row justify-center md:justify-between gap-4 px-8 md:px-0 py-4 -mt-12 md:mt-0 bg-white rounded-xl border border-gray-200 border-solid md:border-transparent shadow-sm md:shadow-none">
               <section className="md:w-1/3 flex flex-col gap-4 items-center">
                 <img
-                  src="../../../images/photo-mentor-1.png"
+                  src={profile?.profilePict || "../../../images/photo-mentor-1.png"}
                   alt="Profile Photo"
-                  className="w-28"
+                  className="w-28 h-28 rounded-full object-cover"
                 />
                 <div className="text-center font-medium text-base md:text-lg">
                   My Profile
                 </div>
-                <EditBtn link={"/profileUser/edit/" + 1} />
+                <EditBtn link={"/profileUser/edit/" + (loggedInId || id)} />
                 <div className="flex gap-4 items-center">
                   {stats.map((stat, index) => (
                     <React.Fragment key={index}>
@@ -65,12 +85,12 @@ const ProfileUser = () => {
               </section>
               <section className="md:w-3/5 flex flex-col gap-3 text-xs md:text-sm">
                 <div className="flex flex-col gap-2 px-4 py-2 mt-3 rounded-md border border-solid border-gray-200">
-                  <ProfileInfo label={"Name"} value={mentor.name} />
-                  <ProfileInfo label={"Email"} value={mentor.email} />
-                  <ProfileInfo label={"Phone Number"} value={mentor.phone} />
+                  <ProfileInfo label={"Name"} value={profile?.fullname || mentor?.name || ""} />
+                  <ProfileInfo label={"Email"} value={profile?.email || mentor?.email || ""} />
+                  <ProfileInfo label={"Phone Number"} value={profile?.phoneNumber || mentor?.phone || ""} />
                 </div>
                 <div className="flex flex-col gap-2 px-4 py-2 text-xs md:text-sm rounded-md border border-solid border-gray-200">
-                  <ProfileInfo label={"About Me"} value={mentor.about} />
+                  <ProfileInfo label={"About Me"} value={profile?.about || mentor?.about || ""} />
                 </div>
                 <div className="md:hidden">
                   <LogoutBtn />

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from "react-router-dom";
-import { isAuthenticated, logout, getUserRole, getUserId } from '../../utils/auth';
+import { isAuthenticated, logout, getUserRole, getUserId, getAuthToken } from '../../utils/auth';
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [fullName, setFullName] = useState("");
+  const [profilePict, setProfilePict] = useState("");
 
   useEffect(() => {
     const checkAuth = () => {
@@ -16,6 +18,25 @@ function Navbar() {
     };
     
     checkAuth();
+    
+    const fetchProfile = async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        const res = await fetch("http://localhost:4000/users/profileUser", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok && data?.mentee) {
+          if (data.mentee.fullname) setFullName(data.mentee.fullname);
+          if (data.mentee.profilePict) setProfilePict(data.mentee.profilePict);
+        }
+      } catch (_) {
+        // ignore fetch errors for navbar greeting
+      }
+    };
+
+    fetchProfile();
     
     // Listen for storage changes (when user logs in/out in another tab)
     window.addEventListener('storage', checkAuth);
@@ -38,9 +59,10 @@ function Navbar() {
   return (
     <>
       <div className="bg-white flex flex-row justify-between h-[50px] bg-gradient-to-r from-[#081C87] to-[#27B2DD] fixed top-0 w-full z-20 lg:h-[67px] md:h-[60px]">
-        <p className="text-black py-[15px] px-[15px] mr-auto lg:px-0 lg:z-30 lg:pt-[20px] lg:mr-[245px]">
-          <img className="size-5 lg:w-[32px] lg:h-[24px] lg:border lg:border-black lg:ml-[25px]" src="../../../public/images/Logo.png" alt="Logo" />
-        </p>
+        <div className="flex items-center gap-3 pl-[15px] lg:pl-[25px]">
+          <img className="size-5 lg:w-[32px] lg:h-[24px] lg:border lg:border-black" src="../../../public/images/Logo.png" alt="Logo" />
+          <span className="hidden md:block text-white font-semibold">{`Halo${fullName ? ", " + fullName : ""}`}</span>
+        </div>
         <ul className="flex md:flex-row lg:flex-row lg:w-[700px] lg:ml-[25px]">
           <li className="hover:text-[#081C87] hover:border-b-4 hover:border-[#081C87] border-b hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[200px] lg:text-[20px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[150px] md:text-[20px] md:leading-[30px] md:pt-[15px] md:text-center">
             <Link to="/"> Dashboard </Link>
@@ -60,8 +82,8 @@ function Navbar() {
           {isLoggedIn ? (
             <>
               <li className="hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[150px] lg:text-[20px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[100px] md:text-[20px] md:leading-[30px] md:pt-[15px] md:text-center">
-                <Link to={userId ? `/profileUser/edit/${userId}` : '/loginUser'}>
-                  <img className="w-[50px] h-[50px] bg-gray-300 rounded-full cursor-pointer" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="User" />
+                <Link to={userId ? `/profileUser/${userId}` : '/loginUser'}>
+                  <img className="w-[50px] h-[50px] bg-gray-300 rounded-full cursor-pointer object-cover" src={profilePict || "https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png"} alt="User" />
                 </Link>
               </li>
               <li className="hidden md:block lg:block lg:text-white lg:font-semibold lg:w-[100px] lg:text-[16px] lg:leading-[30px] lg:pt-[15px] lg:text-center md:text-white md:font-semibold md:w-[80px] md:text-[16px] md:leading-[30px] md:pt-[15px] md:text-center">
@@ -76,7 +98,7 @@ function Navbar() {
             </li>
           )}
         </ul>
-        <button onClick={toggleMenu} className="block lg:ml-[910px] md:hidden mr-6">
+        <button onClick={toggleMenu} className="block lg:ml:[910px] md:hidden mr-6">
           <p className="text-black p-[10px]">
             <img className="size-5 p-[3px] bg-white rounded" src="../../../public/images/Vector.png" alt="Menu" />
           </p>
@@ -86,8 +108,8 @@ function Navbar() {
         <nav className="w-[180px] h-[170px]">
           <ul className="flex flex-col">
             <li className="text-black text-base px-[40px] py-[30px] font-semibold mx-auto">
-              <Link to={userId ? `/profileUser/edit/${userId}` : '/loginUser'}>
-                <img className="mt-7 mx-auto w-[90px] bg-gray-300 rounded-full cursor-pointer" src="https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png" alt="User Avatar" />
+              <Link to={userId ? `/profileUser/${userId}` : '/loginUser'}>
+                <img className="mt-7 mx-auto w-[90px] h-[90px] bg-gray-300 rounded-full cursor-pointer object-cover" src={profilePict || "https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png"} alt="User Avatar" />
               </Link>
             </li>
             <li className="text-black text-base px-[25px] py-[10px] font-semibold">

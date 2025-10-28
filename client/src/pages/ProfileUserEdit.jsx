@@ -1,29 +1,87 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Fragments/Navbar";
 import Footer from "../components/Fragments/Footer";
 import ProfileInfoEdit from "../components/Fragments/ProfileInfoEdit";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import mentors from "../data/mentors";
 
 const ProfileUserEdit = () => {
   let { id } = useParams();
-  const mentor = mentors.find((mentor) => mentor.id === parseInt(id));
-  const [formData, setFormData] = useState({ ...mentor });
-  const [image, setImage] = useState("");
+  const mentor = useMemo(() => mentors.find((m) => m.id === parseInt(id)), [id]);
+  const defaultForm = useMemo(
+    () => ({ name: "", email: "", phone: "", about: "" }),
+    []
+  );
+  const [formData, setFormData] = useState(mentor ? { ...mentor } : defaultForm);
+  const [imagePreview, setImagePreview] = useState("");
+  const [file, setFile] = useState(null);
   const navigate = useNavigate();
 
-  const handleSave = () => {
-    // pengiriman
-    const updatedData = { ...formData, image: image || formData.image };
-    console.log("Saved:", formData);
-    alert("Profile updated successfully!");
-    navigate("/profileUser/" + 1, { replace: true });
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem("accessToken");
+        if (!token) return;
+        const res = await fetch("http://localhost:4000/users/profileUser", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok && data?.mentee) {
+          setFormData({
+            name: data.mentee.fullname || "",
+            email: data.mentee.email || "",
+            phone: data.mentee.phoneNumber || "",
+            about: data.mentee.about || "",
+          });
+          if (data.mentee.profilePict) setImagePreview(data.mentee.profilePict);
+        }
+      } catch (_) {
+        // ignore errors on load
+      }
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
+
+    const fd = new FormData();
+    if (file) fd.append("profilePict", file);
+    fd.append("fullName", formData.fullName || formData.name || "");
+    fd.append("email", formData.email || "");
+    fd.append("phoneNumber", formData.phone || formData.phoneNumber || "");
+    fd.append("about", formData.about || "");
+
+    try {
+      const res = await fetch("http://localhost:4000/users/editUserProfile", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const result = await res.json();
+      if (res.ok) {
+        toast.success("Profil berhasil diperbarui", { position: "bottom-right" });
+        navigate(`/profileUser/${id}`);
+      } else {
+        toast.error(result.message || "Gagal memperbarui profil", { position: "bottom-right" });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Terjadi masalah jaringan", { position: "bottom-right" });
+    }
   };
 
   const handleCancel = () => {
     // pembatalan
     console.log("Edit canceled");
-    setFormData({ ...mentor });
+    setFormData(mentor ? { ...mentor } : defaultForm);
     navigate(-1);
   };
 
@@ -36,18 +94,17 @@ const ProfileUserEdit = () => {
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    setFile(f);
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImage(reader.result);
-    };
-    if (file) {
-      reader.readAsDataURL(file);
-    }
+    reader.onloadend = () => setImagePreview(reader.result);
+    reader.readAsDataURL(f);
   };
 
   return (
     <div>
+      <ToastContainer />
       <Navbar />
       <div className="flex flex-col font-poppins min-h-screen">
         <div className="w-full h-20 bg-gradient-to-r from-blue-900 to-sky-500"></div>
@@ -57,11 +114,11 @@ const ProfileUserEdit = () => {
               <section className="md:w-1/3 flex flex-col gap-4 items-center">
                 <label htmlFor="imageInput" className="cursor-pointer">
                   <div className="w-28 h-28 rounded-full overflow-hidden hover:opacity-60 transition-all">
-                    {image ? (
-                      <img src={image} alt="Profile Photo" className="w-28" />
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Profile Photo" className="w-28" />
                     ) : (
                       <img
-                        src="../../../images/photo-mentor-1.png"
+                        src="/images/photo-mentor-1.png"
                         alt="Profile Photo"
                         className=""
                       />
@@ -70,6 +127,7 @@ const ProfileUserEdit = () => {
                   <input
                     id="imageInput"
                     type="file"
+                    name="profilePict"
                     accept=".jpg, .jpeg, .png"
                     className="hidden"
                     onChange={handleImageChange}
@@ -87,6 +145,7 @@ const ProfileUserEdit = () => {
                     </button>
                     <button
                       type="submit"
+                      form="editForm"
                       className="flex justify-center items-center py-2.5 w-full text-xs md:text-sm font-semibold text-blue-800 bg-white rounded-md border border-solid border-blue-300 cursor-pointer hover:bg-blue-600 hover:text-white transition-all"
                     >
                       Save
@@ -97,17 +156,22 @@ const ProfileUserEdit = () => {
               <form
                 className="md:w-3/5 flex flex-col gap-3 text-xs md:text-sm"
                 onSubmit={handleSave}
+                id="editForm"
               >
                 <div className="flex flex-col gap-2 px-4 py-2 mt-3 rounded-md border border-solid border-gray-200">
                   <ProfileInfoEdit
                     label={"Name"}
+                    name={"name"}
                     value={formData.name}
+                    placeholder={formData.name}
                     layout={"text-left"}
                     inputType={"text"}
                     onChange={handleChange}
                   />
                   <ProfileInfoEdit
                     label={"Email"}
+                    placeholder={formData.email}
+                    name={"email"}
                     value={formData.email}
                     layout={"text-left"}
                     inputType={"text"}
@@ -115,6 +179,8 @@ const ProfileUserEdit = () => {
                   />
                   <ProfileInfoEdit
                     label={"Phone Number"}
+                    placeholder={formData.phone}
+                    name={"phone"}
                     value={formData.phone}
                     layout={"text-left"}
                     inputType={"text"}
@@ -124,6 +190,8 @@ const ProfileUserEdit = () => {
                 <div className="flex flex-col gap-2 px-4 py-2 rounded-md border border-solid border-gray-200">
                   <ProfileInfoEdit
                     label={"About Me"}
+                    name={"about"}
+                    placeholder={formData.about}
                     value={formData.about}
                     layout={"text-center"}
                     inputType={"textarea"}

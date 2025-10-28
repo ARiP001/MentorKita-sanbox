@@ -10,6 +10,7 @@ const Skills = require("../model/Skills");
 const SkillsRelationship = require("../model/SkillsRelationship");
 const Experience = require("../model/Experience");
 const { Op } = require("sequelize");
+const Mentoring = require("../model/Mentoring");
 
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -57,6 +58,53 @@ const postUser = async (req, res) => {
       status: "Error",
       message: error.message,
     });
+  }
+};
+
+// Create mentoring request (mentee -> mentor)
+const requestMentoring = async (req, res) => {
+  try {
+    const authorization = req.headers.authorization;
+    let token;
+    if (authorization && authorization.startsWith("Bearer ")) {
+      token = authorization.substring(7);
+    } else {
+      return res.status(403).json({ status: "Error", message: "Anda harus login" });
+    }
+
+    const decoded = jwt.verify(token, key);
+    const currentUser = await Mentee.findOne({ where: { id: decoded.userId } });
+    if (!currentUser) {
+      return res.status(404).json({ status: "Error", message: `Pengguna dengan id ${decoded.userId} tidak ditemukan` });
+    }
+
+    const { mentorId, courseId, note, startAt } = req.body;
+    if (!mentorId) {
+      return res.status(400).json({ status: "Error", message: "mentorId wajib diisi" });
+    }
+
+    // Optional: ensure mentor exists
+    const mentor = await Mentor.findByPk(mentorId);
+    if (!mentor) {
+      return res.status(404).json({ status: "Error", message: "Mentor tidak ditemukan" });
+    }
+
+    const newReq = await Mentoring.create({
+      mentorId,
+      menteeId: currentUser.id,
+      courseId: courseId || null,
+      status: "WAITING",
+      note: note || null,
+      startAt: startAt || null,
+    });
+
+    res.status(201).json({
+      status: "Success",
+      message: "Permintaan mentoring dibuat",
+      data: newReq,
+    });
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
   }
 };
 
@@ -153,7 +201,30 @@ const getUserProfile = async (req, res) => {
         email: loggedUser.email,
         phoneNumber: loggedUser.phoneNumber,
         about: loggedUser.about,
+        profilePict: loggedUser.profilePict,
       },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "Error",
+      message: error.message,
+    });
+  }
+};
+
+// Get top rated mentors (limited fields)
+const getTopMentors = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 5;
+    const mentors = await Mentor.findAll({
+      attributes: ["id", "fullName", "job", "rating", "profilePict"],
+      order: [["rating", "DESC"]],
+      limit,
+    });
+    res.status(200).json({
+      status: "Success",
+      message: "Top mentors retrieved successfully",
+      data: mentors,
     });
   } catch (error) {
     res.status(500).json({
@@ -680,6 +751,8 @@ module.exports = {
   loginHandler,
   getUserProfile,
   editUserAccount,
+  getTopMentors,
+  requestMentoring,
   beMentor,
   searchMentor,
   addExperience,

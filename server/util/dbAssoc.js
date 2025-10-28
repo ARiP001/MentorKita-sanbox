@@ -9,6 +9,7 @@ const CourseRelationship = require("../model/CourseRelationship");
 const Skills = require("../model/Skills");
 const SkillsRelationship = require("../model/SkillsRelationship");
 const Experience = require("../model/Experience");
+const Mentoring = require("../model/Mentoring");
 const cloudinary = require("../util/cloudinary_config");
 const fs = require("fs");
 
@@ -32,9 +33,17 @@ Comment.belongsTo(Mentor);
 Mentor.hasMany(Experience);
 Experience.belongsTo(Mentor);
 
-// Mentee and Mentor relationship (one-to-many)
+// Mentee and Mentor relationship (direct ownership if any)
 Mentee.hasMany(Mentor, { foreignKey: 'menteeId' });
 Mentor.belongsTo(Mentee, { foreignKey: 'menteeId' });
+
+// Mentoring relationships
+Mentor.hasMany(Mentoring, { foreignKey: 'mentorId' });
+Mentee.hasMany(Mentoring, { foreignKey: 'menteeId' });
+Course.hasMany(Mentoring, { foreignKey: 'courseId' });
+Mentoring.belongsTo(Mentor, { foreignKey: 'mentorId' });
+Mentoring.belongsTo(Mentee, { foreignKey: 'menteeId' });
+Mentoring.belongsTo(Course, { foreignKey: 'courseId' });
 
 // Saved: connect Mentee and Mentor (many-to-many via explicit join model)
 Mentee.belongsToMany(Mentor, { through: Saved, foreignKey: 'menteeId', otherKey: 'mentorId' });
