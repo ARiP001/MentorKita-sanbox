@@ -108,6 +108,70 @@ const requestMentoring = async (req, res) => {
   }
 };
 
+// Accept mentoring request (mentor side)
+const acceptMentoring = async (req, res) => {
+  try {
+    const authorization = req.headers.authorization;
+    let token;
+    if (authorization && authorization.startsWith("Bearer ")) {
+      token = authorization.substring(7);
+    } else {
+      return res.status(403).json({ status: "Error", message: "Anda harus login" });
+    }
+
+    const decoded = jwt.verify(token, key);
+    const currentUser = await Mentee.findOne({ where: { id: decoded.userId } });
+    if (!currentUser || currentUser.role !== "MENTOR") {
+      return res.status(403).json({ status: "Error", message: "Hanya mentor yang dapat menerima permintaan" });
+    }
+
+    const mentor = await Mentor.findOne({ where: { menteeId: currentUser.id } });
+    if (!mentor) return res.status(404).json({ status: "Error", message: "Profil mentor tidak ditemukan" });
+
+    const { id } = req.params;
+    const mentoring = await Mentoring.findByPk(id);
+    if (!mentoring) return res.status(404).json({ status: "Error", message: "Permintaan mentoring tidak ditemukan" });
+    if (mentoring.mentorId !== mentor.id) return res.status(403).json({ status: "Error", message: "Tidak berhak mengubah data ini" });
+
+    await mentoring.update({ status: "ON_PROGRESS", startAt: new Date() });
+    res.status(200).json({ status: "Success", message: "Permintaan diterima", data: mentoring });
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+  }
+};
+
+// Complete mentoring (mentor side)
+const completeMentoring = async (req, res) => {
+  try {
+    const authorization = req.headers.authorization;
+    let token;
+    if (authorization && authorization.startsWith("Bearer ")) {
+      token = authorization.substring(7);
+    } else {
+      return res.status(403).json({ status: "Error", message: "Anda harus login" });
+    }
+
+    const decoded = jwt.verify(token, key);
+    const currentUser = await Mentee.findOne({ where: { id: decoded.userId } });
+    if (!currentUser || currentUser.role !== "MENTOR") {
+      return res.status(403).json({ status: "Error", message: "Hanya mentor yang dapat menandai selesai" });
+    }
+
+    const mentor = await Mentor.findOne({ where: { menteeId: currentUser.id } });
+    if (!mentor) return res.status(404).json({ status: "Error", message: "Profil mentor tidak ditemukan" });
+
+    const { id } = req.params;
+    const mentoring = await Mentoring.findByPk(id);
+    if (!mentoring) return res.status(404).json({ status: "Error", message: "Data mentoring tidak ditemukan" });
+    if (mentoring.mentorId !== mentor.id) return res.status(403).json({ status: "Error", message: "Tidak berhak mengubah data ini" });
+
+    await mentoring.update({ status: "DONE", endAt: new Date() });
+    res.status(200).json({ status: "Success", message: "Mentoring selesai", data: mentoring });
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+  }
+};
+
 module.exports = { postUser };
 
 // Login
@@ -384,6 +448,7 @@ const beMentor = async (req, res) => {
       job,
       lokasi,
       rating,
+      profilePict: currentUser.profilePict,
       menteeId: currentUser.id,
     });
 
@@ -689,6 +754,98 @@ const getAllMentors = async (req, res) => {
   }
 };
 
+// Get mentor's mentoring list (for dashboard/course page)
+const getMentorMentorings = async (req, res) => {
+  try {
+    const authorization = req.headers.authorization;
+    let token;
+    if (authorization && authorization.startsWith("Bearer ")) {
+      token = authorization.substring(7);
+    } else {
+      return res.status(403).json({ status: "Error", message: "Anda harus login" });
+    }
+
+    const decoded = jwt.verify(token, key);
+    const currentUser = await Mentee.findOne({ where: { id: decoded.userId } });
+    if (!currentUser || currentUser.role !== "MENTOR") {
+      return res.status(403).json({ status: "Error", message: "Hanya mentor yang dapat mengakses" });
+    }
+
+    const mentor = await Mentor.findOne({ where: { menteeId: currentUser.id } });
+    if (!mentor) return res.status(404).json({ status: "Error", message: "Profil mentor tidak ditemukan" });
+
+    const items = await Mentoring.findAll({ where: { mentorId: mentor.id }, order: [["createdAt", "DESC"]] });
+
+    // Hydrate with mentee info
+    const menteeIds = [...new Set(items.map(i => i.menteeId))];
+    const mentees = await Mentee.findAll({ where: { id: menteeIds } });
+    const idToMentee = new Map(mentees.map(m => [m.id, m]));
+
+    const response = items.map(i => ({
+      id: i.id,
+      menteeId: i.menteeId,
+      menteeName: idToMentee.get(i.menteeId)?.fullName,
+      menteeProfilePict: idToMentee.get(i.menteeId)?.profilePict,
+      courseId: i.courseId,
+      status: i.status,
+      startAt: i.startAt,
+      endAt: i.endAt,
+      note: i.note,
+    }));
+
+    res.status(200).json({ status: "Success", data: response });
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+  }
+};
+
+// Get mentee's mentoring list (for user dashboard)
+const getMenteeMentorings = async (req, res) => {
+  try {
+    const authorization = req.headers.authorization;
+    let token;
+    if (authorization && authorization.startsWith("Bearer ")) {
+      token = authorization.substring(7);
+    } else {
+      return res.status(403).json({ status: "Error", message: "Anda harus login" });
+    }
+
+    const decoded = jwt.verify(token, key);
+    const currentUser = await Mentee.findOne({ where: { id: decoded.userId } });
+    if (!currentUser) {
+      return res.status(404).json({ status: "Error", message: `Pengguna dengan id ${decoded.userId} tidak ditemukan` });
+    }
+
+    const items = await Mentoring.findAll({ where: { menteeId: currentUser.id }, order: [["createdAt", "DESC"]] });
+
+    // Hydrate with mentor info
+    const mentorIds = [...new Set(items.map(i => i.mentorId))];
+    const mentors = await Mentor.findAll({ where: { id: mentorIds } });
+    const courseIds = [...new Set(items.map(i => i.courseId).filter(Boolean))];
+    const courses = await Course.findAll({ where: { id: courseIds } });
+    const idToMentor = new Map(mentors.map(m => [m.id, m]));
+    const idToCourse = new Map(courses.map(c => [c.id, c]));
+
+    const response = items.map(i => ({
+      id: i.id,
+      mentorId: i.mentorId,
+      mentorName: idToMentor.get(i.mentorId)?.fullName,
+      mentorJob: idToMentor.get(i.mentorId)?.job,
+      mentorProfilePict: idToMentor.get(i.mentorId)?.profilePict,
+      courseId: i.courseId,
+      courseName: i.courseId ? idToCourse.get(i.courseId)?.nama_course : undefined,
+      status: i.status,
+      startAt: i.startAt,
+      endAt: i.endAt,
+      note: i.note,
+    }));
+
+    res.status(200).json({ status: "Success", data: response });
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+  }
+};
+
 // Get mentor detail with all related data
 const getMentorDetail = async (req, res) => {
   try {
@@ -731,10 +888,32 @@ const getMentorDetail = async (req, res) => {
       });
     }
 
+    // Fetch mentorings for this mentor
+    const mentorings = await Mentoring.findAll({ where: { mentorId: mentor.id } });
+    const menteeIds = [...new Set(mentorings.map((m) => m.menteeId))];
+    const mentees = await Mentee.findAll({ where: { id: menteeIds } });
+    const idToMentee = new Map(mentees.map((m) => [m.id, m]));
+
+    const mentoringList = mentorings.map((m) => ({
+      id: m.id,
+      mentee: idToMentee.get(m.menteeId)
+        ? {
+            id: idToMentee.get(m.menteeId).id,
+            fullName: idToMentee.get(m.menteeId).fullName,
+            profilePict: idToMentee.get(m.menteeId).profilePict,
+          }
+        : { id: m.menteeId },
+      courseId: m.courseId,
+      status: m.status,
+      startAt: m.startAt,
+      endAt: m.endAt,
+      note: m.note,
+    }));
+
     res.status(200).json({
       status: "Success",
       message: "Mentor detail retrieved successfully",
-      data: mentor
+      data: { ...mentor.toJSON(), mentorings: mentoringList }
     });
   } catch (error) {
     console.error("Error getting mentor detail:", error);
@@ -746,6 +925,87 @@ const getMentorDetail = async (req, res) => {
   }
 };
 
+// Add comment from mentee to mentor
+const addComment = async (req, res) => {
+  try {
+    const authorization = req.headers.authorization;
+    let token;
+    if (authorization && authorization.startsWith("Bearer ")) {
+      token = authorization.substring(7);
+    } else {
+      return res.status(403).json({ status: "Error", message: "Anda harus login" });
+    }
+
+    const decoded = jwt.verify(token, key);
+    const currentUser = await Mentee.findOne({ where: { id: decoded.userId } });
+    if (!currentUser) {
+      return res.status(404).json({ status: "Error", message: `Pengguna dengan id ${decoded.userId} tidak ditemukan` });
+    }
+
+    const { mentorId, body } = req.body;
+    if (!mentorId || !body) {
+      return res.status(400).json({ status: "Error", message: "mentorId dan body wajib diisi" });
+    }
+
+    const mentor = await Mentor.findByPk(mentorId);
+    if (!mentor) return res.status(404).json({ status: "Error", message: "Mentor tidak ditemukan" });
+
+    const comment = await Comment.create({ mentorId, menteeId: currentUser.id, body });
+
+    res.status(201).json({ status: "Success", message: "Komentar ditambahkan", data: comment });
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+  }
+};
+
+// Get comments for current mentor (with mentee info)
+const getMentorComments = async (req, res) => {
+  try {
+    const authorization = req.headers.authorization;
+    let token;
+    if (authorization && authorization.startsWith("Bearer ")) {
+      token = authorization.substring(7);
+    } else {
+      return res.status(403).json({ status: "Error", message: "Anda harus login" });
+    }
+
+    const decoded = jwt.verify(token, key);
+    const currentUser = await Mentee.findOne({ where: { id: decoded.userId } });
+    if (!currentUser || currentUser.role !== "MENTOR") {
+      return res.status(403).json({ status: "Error", message: "Hanya mentor yang dapat mengakses" });
+    }
+
+    const mentor = await Mentor.findOne({ where: { menteeId: currentUser.id } });
+    if (!mentor) return res.status(404).json({ status: "Error", message: "Profil mentor tidak ditemukan" });
+
+    const comments = await Comment.findAll({
+      where: { mentorId: mentor.id },
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: Mentee,
+          attributes: ["id", "fullName", "profilePict"],
+        },
+      ],
+    });
+
+    const data = comments.map((c) => ({
+      id: c.id,
+      body: c.body,
+      createdAt: c.createdAt,
+      mentee: {
+        id: c.mentee?.id,
+        fullName: c.mentee?.fullName,
+        profilePict: c.mentee?.profilePict,
+      },
+    }));
+
+    res.status(200).json({ status: "Success", data });
+  } catch (error) {
+    res.status(500).json({ status: "Error", message: error.message });
+  }
+};
+
 module.exports = {
   postUser,
   loginHandler,
@@ -753,11 +1013,17 @@ module.exports = {
   editUserAccount,
   getTopMentors,
   requestMentoring,
+  acceptMentoring,
+  completeMentoring,
+  addComment,
+  getMentorComments,
+  getMenteeMentorings,
   beMentor,
   searchMentor,
   addExperience,
   refreshTokenHandler,
   getAllMentors,
+  getMentorMentorings,
   getMentorDetail,
 };
 

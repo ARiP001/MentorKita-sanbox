@@ -338,17 +338,18 @@ const MentorDetail = () => {
             </section>
             <section className="my-10">
               {isContactVisible && (
-                <ContactCard
-                  phone={mentor.phoneNumber}
-                  location={mentor.lokasi}
-                  email={mentor.email}
-                  courses={mentor.courses?.map(course => ({
-                    value: course.nama_course,
-                    label: course.nama_course
-                  })) || []}
-                  onClose={() => setIsContactVisible(false)}
-                />
-              )}
+              <ContactCard
+                mentorId={mentor.id}
+                phone={mentor.phoneNumber}
+                location={mentor.lokasi}
+                email={mentor.email}
+                courses={mentor.courses?.map(course => ({
+                  value: course.id,
+                  label: course.nama_course
+                })) || []}
+                onClose={() => setIsContactVisible(false)}
+              />
+            )}
             </section>
           </main>
         </div>

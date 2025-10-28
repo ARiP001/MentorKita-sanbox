@@ -9,6 +9,7 @@ import MyMentorCard from "../components/Fragments/MyMentorCard";
 import RatingBadge from "../components/Fragments/RatingBadge";
 import EditBtn from "../components/Elements/Button/editBtn";
 import { getUserId, getAuthToken } from "../utils/auth";
+import MentorReview from "../components/Fragments/MentorReview";
 
 const stats = [
   { value: 2, label: "Course" },
@@ -35,6 +36,8 @@ const ProfileUser = () => {
   const mentor = mentors.find((mentor) => mentor.id === parseInt(id));
   const loggedInId = getUserId();
   const [profile, setProfile] = useState(null);
+  const [menteeMentorings, setMenteeMentorings] = useState([]);
+  const [reviewFor, setReviewFor] = useState(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -51,6 +54,23 @@ const ProfileUser = () => {
       }
     };
     fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    const fetchMenteeMentorings = async () => {
+      try {
+        const token = getAuthToken();
+        if (!token) return;
+        const res = await fetch("http://localhost:4000/users/getMenteeMentorings", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.data)) setMenteeMentorings(data.data);
+      } catch (_) {
+        // ignore
+      }
+    };
+    fetchMenteeMentorings();
   }, []);
 
   return (
@@ -108,22 +128,36 @@ const ProfileUser = () => {
                 </a>
               </div>
               <div className="w-full py-5">
-                {mentors.map((mentor) => (
-                  <MyMentorCard
-                    key={mentor.id}
-                    {...mentor}
-                    ratingBadge={
-                      <RatingBadge
-                        rating={mentor.rating}
-                        reviewers={mentor.reviewers}
-                      />
-                    }
-                  />
-                ))}
+                {menteeMentorings.length === 0 ? (
+                  <p className="text-gray-500 text-sm">Belum ada aktivitas mentoring</p>
+                ) : (
+                  menteeMentorings.map((m) => (
+                    <MyMentorCard
+                      key={m.id}
+                      name={m.mentorName || `Mentor #${m.mentorId}`}
+                      status={m.status === 'DONE' ? 'Done' : m.status === 'ON_PROGRESS' ? 'On Progress' : 'Waiting'}
+                      photo={m.mentorProfilePict || "https://cdn1.iconfinder.com/data/icons/basic-ui-set-v5-user-outline/64/Account_profile_user_avatar_rounded-512.png"}
+                      rating={"5"}
+                      course={m.courseName || ""}
+                      courseUser={m.mentorJob || m.courseName || ""}
+                      ratingBadge={
+                        <RatingBadge rating={5} reviewers={0} />
+                      }
+                      onAddReview={() => setReviewFor({ mentorId: m.mentorId, name: m.mentorName, photo: m.mentorProfilePict })}
+                    />
+                  ))
+                )}
               </div>
             </section>
           </div>
         </main>
+        {reviewFor && (
+          <MentorReview
+            mentor={{ name: reviewFor.name, photo: reviewFor.photo, rating: 5 }}
+            mentorId={reviewFor.mentorId}
+            onClose={() => setReviewFor(null)}
+          />
+        )}
         <Footer />
       </div>
     </div>

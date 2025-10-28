@@ -3,17 +3,35 @@ import StarRating from "../Elements/starRating";
 import TextareaForm from "../Elements/Input/textareaForm";
 import SubmissionSuccess from "./SubmissionSuccess";
 
-const MentorReview = ({ mentor, onClose }) => {
-  const ratingInNumber = Number(mentor.rating);
+const MentorReview = ({ mentor, mentorId, onClose }) => {
+  const ratingInNumber = Number(mentor.rating || 5);
   const [reviewText, setReviewText] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Review submitted:", reviewText);
-    
-    setSubmitted(true);
-    setReviewText("");
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) return alert("Silakan login terlebih dahulu");
+
+      const res = await fetch("http://localhost:4000/users/addComment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ mentorId, body: reviewText }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setSubmitted(true);
+        setReviewText("");
+      } else {
+        alert(result.message || "Gagal mengirim review");
+      }
+    } catch (_) {
+      alert("Terjadi masalah jaringan");
+    }
   };
 
   const handleClose = (e) => {

@@ -1,31 +1,49 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
-import CheckBoxForm from "../Elements/Input/checkboxForm";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+// Removed checkbox list; using radio inputs
 import DarkBlueButton from "../Elements/Button/darkBlueButton";
 import SubmissionSuccess from "./SubmissionSuccess";
 
-const ContactCard = ({ phone, email, location, courses, onClose }) => {
-  const [selectedCourses, setSelectedCourses] = useState([]);
+const ContactCard = ({ mentorId, phone, email, location, courses, onClose }) => {
+  const [selectedCourse, setSelectedCourse] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [reviewText, setReviewText] = useState("");
 
   const handleCourseChange = (event) => {
-    const courseValue = event.target.value;
-    if (event.target.checked) {
-      setSelectedCourses([...selectedCourses, courseValue]);
-    } else {
-      setSelectedCourses(
-        selectedCourses.filter((course) => course !== courseValue)
-      );
-    }
+    setSelectedCourse(event.target.value);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Succes Registration", reviewText);
+    try {
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        toast.error("Silakan login terlebih dahulu", { position: "bottom-right" });
+        return;
+      }
 
-    setSubmitted(true);
-    setReviewText("");
+      const courseId = selectedCourse || null;
+      const res = await fetch("http://localhost:4000/users/requestMentoring", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ mentorId, courseId }),
+      });
+      const result = await res.json();
+      if (res.ok) {
+        setSubmitted(true);
+        toast.success("Permintaan dikirim", { position: "bottom-right" });
+        setReviewText("");
+      } else {
+        toast.error(result.message || "Gagal mengirim permintaan", { position: "bottom-right" });
+      }
+    } catch (err) {
+      toast.error("Terjadi masalah jaringan", { position: "bottom-right" });
+    }
   };
 
   const handleClose = (e) => {
@@ -43,19 +61,27 @@ const ContactCard = ({ phone, email, location, courses, onClose }) => {
       onClick={handleClose}
       className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-25 backdrop-blur-sm font-poppins"
     >
+      <ToastContainer />
       <section className="w-[375px] pb-6 p-4 bg-[#081C87] shadow-2xl text-white">
         <h1 className="text-2xl font-semibold mb-4">Choose Your Course</h1>
         <form onSubmit={handleSubmit} className="mb-12">
           <div className="py-2">
             {courses && courses.length > 0 ? (
               courses.map((course) => (
-                <CheckBoxForm
+                <label
                   key={course.value}
-                  object={course}
-                  handleObjectChange={handleCourseChange}
-                  selectedObject={selectedCourses}
-                  customClass="w-[260px] border border-white text-black bg-white mb-3 py-[2px] px-4 truncate overflow-hidden rounded-xl text-base"
-                />
+                  className="flex items-center gap-3 w-[260px] border border-white text-black bg-white mb-3 py-[8px] px-4 rounded-xl text-base cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="selectedCourse"
+                    value={course.value}
+                    checked={selectedCourse === String(course.value)}
+                    onChange={handleCourseChange}
+                    className="accent-[#081C87]"
+                  />
+                  <span className="truncate">{course.label}</span>
+                </label>
               ))
             ) : (
               <p className="text-white text-center py-4">No courses available</p>
@@ -129,6 +155,7 @@ const ContactCard = ({ phone, email, location, courses, onClose }) => {
 };
 
 ContactCard.propTypes = {
+  mentorId: PropTypes.number.isRequired,
   phone: PropTypes.string.isRequired,
   email: PropTypes.string.isRequired,
   location: PropTypes.string.isRequired,

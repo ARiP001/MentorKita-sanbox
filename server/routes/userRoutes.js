@@ -12,7 +12,14 @@ const {
   refreshTokenHandler,
   getAllMentors,
   getMentorDetail,
-  getTopMentors
+  getTopMentors,
+  requestMentoring,
+  acceptMentoring,
+  completeMentoring,
+  addComment,
+  getMentorMentorings,
+  getMentorComments,
+  getMenteeMentorings,
 } = require("../controller/user");
 
 // Routes for Mentee
@@ -43,7 +50,21 @@ router.get ("/users/getTopMentors", getTopMentors);
 // Mentoring request
 router.post("/users/requestMentoring", requestMentoring);
 
+// Mentor actions on mentoring
+router.put("/users/mentoring/:id/accept", acceptMentoring);
+router.put("/users/mentoring/:id/complete", completeMentoring);
+
+// Mentor dashboard data
+router.get("/users/getMentorMentorings", getMentorMentorings);
+router.get("/users/getMentorComments", getMentorComments);
+
+// Mentee dashboard data
+router.get("/users/getMenteeMentorings", getMenteeMentorings);
+
 router.post ("/users/addExperience", addExperience);
+
+// Comments
+router.post("/users/addComment", addComment);
 
 // Refresh token endpoint
 router.post("/users/refreshToken", refreshTokenHandler);

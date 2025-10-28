@@ -12,6 +12,7 @@ const MyMentorCard = ({
   course,
   ratingBadge,
   courseUser,
+  onAddReview,
 }) => {
   const ratingInNumber = Number(rating);
   const [isReviewVisible, setIsReviewVisible] = useState(false);
@@ -59,6 +60,15 @@ const MyMentorCard = ({
           >
             {status}
           </div>
+          {status === "Done" && (
+            <button
+              type="button"
+              onClick={onAddReview}
+              className="mt-2 bg-[#27B2DD] hover:bg-[#1aa7d5] text-white text-sm font-semibold py-2 px-4 rounded-[10px] w-36"
+            >
+              Add Review
+            </button>
+          )}
           {isReviewVisible && status === "Review" && (
             <MentorReview
               mentor={mentors.find((mentor) => mentor.status === "Review")}
